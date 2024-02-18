@@ -80,6 +80,8 @@ public class QuicklookPanel: NSResponder {
         get { previewPanel.currentPreviewItemIndex }
         set { previewPanel.currentPreviewItemIndex = newValue }
     }
+    
+    public var currentItemHandler: ((QuicklookPreviewable, Int)->())? = nil
 
     /**
      The currently previewed item.
@@ -159,6 +161,7 @@ public class QuicklookPanel: NSResponder {
      */
     public func close() {
         if previewPanel.isVisible == true {
+            currentItemHandler = nil
             previewPanel.close()
             reset()
             //  previewPanel.orderOut(nil)
@@ -240,9 +243,15 @@ public class QuicklookPanel: NSResponder {
         QLPreviewPanel.shared()
     }
 
+    var currentItemIndexObserver: NSKeyValueObservation? = nil
     override init() {
         super.init()
         hidesOnAppDeactivate = true
+        currentItemIndexObserver = previewPanel.observeChanges(for: \.currentPreviewItemIndex) { old, new in
+            if self.isVisible, let currentItem = self.currentItem {
+                self.currentItemHandler?(currentItem, self.currentItemIndex)
+            }
+        }
     }
 
     @available(*, unavailable)
@@ -253,9 +262,10 @@ public class QuicklookPanel: NSResponder {
 
 extension QuicklookPanel: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
     public func previewPanel(_: QLPreviewPanel!, handle event: NSEvent!) -> Bool {
-        if event.type == .keyUp, event.keyCode == 53 {
-            close()
-            return true
+        if event.type == .keyUp {
+            if event.keyCode == 49 || event.keyCode == 53 {
+                self.currentItemHandler = nil
+            }
         }
         if let keyDownResponder = keyDownResponder, event.type == .keyUp {
             keyDownResponder.keyDown(with: event)
@@ -267,7 +277,7 @@ extension QuicklookPanel: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
         if let frame = (item as? QuicklookPreviewItem)?.previewItemFrame {
             return frame
         }
-
+/*
         if let itemsProviderWindow = itemsProviderWindow {
             return itemsProviderWindow.frame
         }
@@ -277,6 +287,7 @@ extension QuicklookPanel: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
             frame.center = screenFrame.center
             return frame
         }
+ */
 
         return .zero
     }
