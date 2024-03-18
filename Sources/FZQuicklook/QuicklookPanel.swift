@@ -82,7 +82,7 @@ public class QuicklookPanel: NSResponder {
     }
     
     public var currentItemHandler: ((QuicklookPreviewable, Int)->())? = nil
-
+    
     /**
      The currently previewed item.
 
@@ -110,7 +110,7 @@ public class QuicklookPanel: NSResponder {
 
      The responder that handles events whenever the user presses a key when the panel is open.
      */
-    public weak var keyDownResponder: NSResponder? = nil
+    public var keyDownHandler: ((NSEvent)->())? = nil
 
     /// The handler gets called when the panel did close.
     public var panelDidCloseHandler: (() -> Void)? = nil
@@ -202,7 +202,7 @@ public class QuicklookPanel: NSResponder {
     func reset() {
         items.removeAll()
         itemsProviderWindow = nil
-        keyDownResponder = nil
+        keyDownHandler = nil
         needsReload = false
         panelDidCloseHandler = nil
     }
@@ -234,7 +234,6 @@ public class QuicklookPanel: NSResponder {
     override public func endPreviewPanelControl(_ panel: QLPreviewPanel!) {
         panel.dataSource = nil
         panel.delegate = nil
-
         panelDidCloseHandler?()
         reset()
     }
@@ -266,9 +265,8 @@ extension QuicklookPanel: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
             if event.keyCode == 49 || event.keyCode == 53 {
                 self.currentItemHandler = nil
             }
-        }
-        if let keyDownResponder = keyDownResponder, event.type == .keyUp {
-            keyDownResponder.keyDown(with: event)
+        } else if event.type == .keyDown {
+            keyDownHandler?(event)
         }
         return true
     }
@@ -302,5 +300,11 @@ extension QuicklookPanel: QLPreviewPanelDataSource, QLPreviewPanelDelegate {
 
     public func previewPanel(_: QLPreviewPanel!, transitionImageFor item: QLPreviewItem!, contentRect _: UnsafeMutablePointer<NSRect>!) -> Any! {
         (item as? QuicklookPreviewable)?.previewItemTransitionImage
+    }
+}
+
+extension NSEvent {
+    func setType(_ type: EventType) {
+        setValue(type.rawValue, forKey: "type")
     }
 }

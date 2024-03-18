@@ -47,10 +47,22 @@ public extension NSTableView {
       ```
       */
     var isQuicklookPreviewable: Bool {
-        get { getAssociatedValue(key: "isQuicklookPreviewable", object: self, initialValue: false) }
-        set { set(associatedValue: newValue, key: "isQuicklookPreviewable", object: self)
-            setupKeyDownMonitor()
+        get { quicklookGestureRecognizer != nil }
+        set { 
+            guard newValue != isQuicklookPreviewable else { return }
+            if newValue {
+                quicklookGestureRecognizer = QuicklookGestureRecognizer()
+                addGestureRecognizer(quicklookGestureRecognizer!)
+            } else {
+                quicklookGestureRecognizer?.removeFromView()
+                quicklookGestureRecognizer = nil
+            }
         }
+    }
+    
+    internal var quicklookGestureRecognizer: QuicklookGestureRecognizer? {
+        get { getAssociatedValue("quicklookGestureRecognizer", initialValue: nil) }
+        set { setAssociatedValue(newValue, key: "quicklookGestureRecognizer") }
     }
 
     /**
@@ -78,7 +90,11 @@ public extension NSTableView {
         }
 
         if QuicklookPanel.shared.isVisible == false {
-            QuicklookPanel.shared.keyDownResponder = self
+            QuicklookPanel.shared.keyDownHandler = { [weak self] event in
+                guard let self = self else { return }
+                self.keyDown(with: event)
+                self.quicklookGestureRecognizer?.checkSelectedRows()
+            }
             QuicklookPanel.shared.present(previewables, currentItemIndex: currentIndex)
         } else {
             QuicklookPanel.shared.items = previewables
