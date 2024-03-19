@@ -33,21 +33,14 @@ extension NSCollectionView {
                 if self.isQuicklookPreviewable, event.keyCode == 49 {
                     if QuicklookPanel.shared.isVisible == false {
                         self.quicklookSelectedItems()
+                        QuicklookPanel.shared.keyDownHandler = { [weak self] event in
+                            guard let self = self else { return }
+                            self.keyDown(with: event)
+                        }
                     } else {
                         QuicklookPanel.shared.close()
                     }
                     return nil
-                } else {
-                    if QuicklookPanel.shared.isVisible {
-                        let currentSelection = self.selectionIndexPaths
-                        if currentSelection.count <= 1 {
-                            self.keyDown(with: event)
-                            if self.selectionIndexPaths != currentSelection {
-                                self.quicklookSelectedItems()
-                            }
-                            return nil
-                        }
-                    }
                 }
                 return event
             })
@@ -62,9 +55,8 @@ extension NSCollectionView {
             selectionObserver = observeChanges(for: \.selectionIndexPaths, handler: { [weak self] old, new in
                 guard let self = self else { return }
                 if QuicklookPanel.shared.isVisible {
-                    if old != new, new.isEmpty == false {
-                        self.quicklookSelectedItems()
-                    }
+                    guard old != new else { return }
+                    self.quicklookSelectedItems()
                 } else {
                     removeSelectionObserver()
                 }
