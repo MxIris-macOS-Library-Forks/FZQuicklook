@@ -9,35 +9,35 @@ import AppKit
 import FZSwiftUtils
 import Quartz
 
-/// A Quick Look preview of an item that you can embed into your view hierarchy.
-open class QuicklookView: NSView, QuicklookPreviewable {
+/**
+ A Quick Look preview of an item that you can embed into your view hierarchy.
+ 
+ To enable quicklock of the preview item by spacebar, use ``QuicklookPreviewable/isPreviewableBySpacebar``
+ */
+@objc open class QuicklookView: NSView, QuicklookPreviewable {
     var qlPreviewView: QLPreviewView!
+    var previousItem: QuicklookPreviewable?
+    
     /**
      The item to preview.
 
      You can preview any item conforming to ``QuicklookPreviewable``. When you set this property, the `QuicklookView` loads the preview asynchronously. Due to this asynchronous behavior, don’t assume that the preview is ready immediately after assigning it to this property.
      */
-    open var item: QuicklookPreviewable? {
-        get { (qlPreviewView.previewItem as? QuicklookPreviewItem)?.preview }
+    public var item: QuicklookPreviewable? {
+        get {
+            if let item = (qlPreviewView.previewItem as? QuicklookPreviewItem)?.preview {
+                return item
+            }
+            return previousItem
+        }
         set {
-            if let newValue = newValue {
+            if let newValue = newValue, window != nil {
                 qlPreviewView.previewItem = QuicklookPreviewItem(newValue)
             } else {
                 qlPreviewView.previewItem = nil
             }
+            previousItem = newValue
         }
-    }
-
-    func replaceQLPreviewView(includingItem: Bool) {
-        qlPreviewView.removeFromSuperview()
-        let autostarts = autostarts
-        let shouldClose = shouldCloseWithWindow
-        let item = includingItem ? item : nil
-        qlPreviewView = QLPreviewView(frame: .zero, style: style)
-        self.autostarts = autostarts
-        shouldCloseWithWindow = shouldClose
-        self.item = item
-        addSubview(withConstraint: qlPreviewView)
     }
 
     /**
@@ -50,11 +50,10 @@ open class QuicklookView: NSView, QuicklookPreviewable {
     }
 
     /// The style of the preview.
-    open var style: QLPreviewViewStyle = .normal {
+    @objc open var style: QLPreviewViewStyle = .normal {
         didSet {
-            if style != oldValue {
-                replaceQLPreviewView(includingItem: true)
-            }
+            guard style != oldValue else { return }
+            replaceQLPreviewView(includingItem: true)
         }
     }
 
@@ -63,65 +62,42 @@ open class QuicklookView: NSView, QuicklookPreviewable {
 
      Set this property to allow previews of movie files to start playback automatically when displayed.
      */
-    open var autostarts: Bool {
+    @objc open var autostarts: Bool {
         get { qlPreviewView.autostarts }
         set { qlPreviewView.autostarts = newValue }
     }
 
-    /**
-     A Boolean value that determines whether the preview should close when its window closes.
-
-     The default value of this property is `true`, which means that the preview automatically closes when its window closes. If you set this property to `false`, close the preview by calling the ``close()`` method when finished with it. Once you close a `QuicklookView`, it won’t accept any more preview items.
-     */
-    open var shouldCloseWithWindow: Bool {
+    @objc open var shouldCloseWithWindow: Bool {
         get { qlPreviewView.shouldCloseWithWindow }
         set {
             guard newValue != shouldCloseWithWindow else { return }
             qlPreviewView.shouldCloseWithWindow = newValue
-            // setupWindowObserver()
         }
     }
-
-    /**
-     Closes the view, releasing the current item.
-
-     Once a QuicklookView is closed, it won’t accept any more preview items. You only need to call this method if ``shouldCloseWithWindow`` is set to false. If you don’t close a `QuicklookView when you are done using it, your app will leak memory.
-     */
-    open func close() {
-        qlPreviewView.close()
-        isClosed = true
+    
+    @objc open override func viewWillMove(toWindow newWindow: NSWindow?) {
+        if newWindow == nil {
+            qlPreviewView.removeFromSuperview()
+        } else if let previousItem = previousItem {
+            replaceQLPreviewView(includingItem: false)
+            qlPreviewView.previewItem = QuicklookPreviewItem(previousItem)
+            self.previousItem = nil
+        }
+        super.viewWillMove(toWindow: newWindow)
     }
-
-    var isClosed: Bool = false
-    var windowObserver: KeyValueObservation? = nil
-    var windowCloseObserver: NotificationToken? = nil
-
-    /*
-     func setupWindowCloseObserver() {
-
-     }
-
-     func setupWindowObserver() {
-         if shouldCloseWithWindow {
-             windowObserver = self.observeChanges(for: \.window) { [weak self] old, new in
-                 guard let self = self, old != new else { return }
-                 if let new = new {
-                     self.windowCloseObserver =    NotificationCenter.default.observe(NSWindow.willCloseNotification, object: new) { _ in
-                         self.isClosed = true
-                         self.windowCloseObserver = nil
-                         self.windowObserver = nil
-                     }
-                 } else {
-                     self.isClosed = true
-                 }
-             }
-         } else {
-             windowObserver = nil
-             windowCloseObserver = nil
-         }
-     }
-      */
-
+    
+    func replaceQLPreviewView(includingItem: Bool) {
+        let item = includingItem ? item : nil
+        let starts = autostarts
+        let shouldClose = shouldCloseWithWindow
+        qlPreviewView.removeFromSuperview()
+        qlPreviewView = QLPreviewView(frame: .zero, style: style)
+        autostarts = starts
+        shouldCloseWithWindow = shouldClose
+        self.item = includingItem ? item : nil
+        addSubview(withConstraint: qlPreviewView)
+    }
+    
     /**
      Creates a preview view with the provided item and style.
 
@@ -133,8 +109,10 @@ open class QuicklookView: NSView, QuicklookPreviewable {
      - Returns: Returns a `QuicklookView` object with the designated item, style and frame.
 
      */
-    public init(item: QuicklookPreviewable, style _: QLPreviewViewStyle = .normal, frame: NSRect) {
+    public init(item: QuicklookPreviewable, style: QLPreviewViewStyle = .normal, frame: NSRect) {
         super.init(frame: frame)
+        sharedInit()
+        self.style = style
         self.item = item
     }
 
@@ -153,6 +131,10 @@ open class QuicklookView: NSView, QuicklookPreviewable {
         addSubview(withConstraint: qlPreviewView)
     }
     
+    deinit {
+        qlPreviewView.removeFromSuperview()
+    }
+    
     public var previewItemURL: URL? {
         item?.previewItemURL
     }
@@ -165,3 +147,45 @@ open class QuicklookView: NSView, QuicklookPreviewable {
         item?.previewItemTitle
     }
 }
+
+/*
+ if let size = _items[safe: currentItemIndex]?.targetSize{
+     targetSize = size
+     targetSize?.height += 43
+     targetSize?.width += 10
+     Swift.print("targetSize", targetSize ?? "")
+ }
+ 
+ frameObservation = previewPanel.observeChanges(for: \.frame) { [weak self] old, new in
+     guard let self = self, old != new else { return }
+     Swift.print("frame", new, self.isVisible)
+     if let targetSize = targetSize, new.size != targetSize {
+         var new = new
+         new.size = targetSize
+         if let visibleFrame = NSScreen.main?.visibleFrame {
+             new.center = visibleFrame.center
+         }
+         self.previewPanel.setFrame(new, display: false)
+     }
+ }
+ 
+ extension NSMetadataItem {
+     var pixelSize: CGSize? {
+         guard let height = value(forAttribute: "kMDItemPixelHeight") as? CGFloat, let width = value(forAttribute: "kMDItemPixelWidth") as? CGFloat else { return nil }
+         return CGSize(width: width, height: height)
+     }
+ }
+ 
+ extension QuicklookPreviewItem {
+     var targetSize: CGSize? {
+         guard let url = previewItemURL else { return nil }
+         if let pixelSize = NSMetadataItem(url: url)?.pixelSize {
+             return pixelSize
+         } else if let pixelSize = ImageSource(url: url)?.properties(at: 0)?.pixelSize {
+             return pixelSize
+         }
+         return nil
+     }
+ }
+
+ */
