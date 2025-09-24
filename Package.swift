@@ -13,7 +13,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/MxIris-Library-Forks/FZSwiftUtils.git", branch: "stable"),
+        .package(url: "https://github.com/MxIris-Library-Forks/FZSwiftUtils.git", branch: "main"),
     ],
     targets: [
         .target(
