@@ -52,7 +52,7 @@ class QuicklookGestureRecognizer: NSGestureRecognizer {
                 } else {
                     tableView.quicklookSelectedRows()
                     selectedRows = tableView.selectedRowIndexes
-                    selectionObserver = NotificationCenter.default.observe(NSTableView.selectionDidChangeNotification, object: tableView) { [weak self] _ in
+                    selectionObserver = NotificationCenter.default.observe(NSTableView.selectionDidChangeNotification, postedBy: tableView) { [weak self] _ in
                         guard let self = self else { return }
                         guard QuicklookPanel.shared.isVisible else {
                             self.selectionObserver = nil
