@@ -41,11 +41,11 @@ public protocol QuicklookPreviewable {
     /**
      The URL of the item to preview.
 
-     ``QuicklookPanel`` and ``QuicklookView`` use this property to get an item’s URL. In typical use, you’d implement a getter method in your preview item class to provide this value.
+     ``QuicklookPanel`` and ``QuicklookView`` use this property to get an item’s URL.
 
-     The value of this property must be a file-type URL.
+     The value of this property must be a file URL.
 
-     If the item isn’t available for preview eturn `nil`. In this case, the ``QuicklookPanel`` and ``QuicklookView`` displays a “loading” view. Use ``QuicklookPanel/refreshCurrentItem()`` to reload the item once the URL content is available.
+     If the item isn’t available for preview return `nil`. In this case, the ``QuicklookPanel`` and ``QuicklookView`` displays a “loading” view. Use ``QuicklookPanel/refreshCurrentItem()`` to reload the item once the content is available.
      */
     var previewItemURL: URL? { get }
     /**
@@ -53,7 +53,7 @@ public protocol QuicklookPreviewable {
 
      The system invokes this optional property when the preview panel opens or closes to provide a zoom effect.
 
-     `NSView` and `NSCollectionViewItem` conforming to `QuicklookPreviewable` provide their frame as default value.
+     [NSView](https://developer.apple.com/documentation/appkit/nsview) and [NSCollectionViewItem](https://developer.apple.com/documentation/appkit/nscollectionviewitem) conforming to `QuicklookPreviewable` provide their frame as default value.
      */
     var previewItemFrame: CGRect? { get }
     /**
@@ -61,13 +61,13 @@ public protocol QuicklookPreviewable {
 
      The system invokes this optional property when the preview panel opens or closes to provide a transition image.
 
-     `NSView` and `NSCollectionViewItem` conforming to `QuicklookPreviewable` provide default values.
+     [NSView](https://developer.apple.com/documentation/appkit/nsview) and [NSCollectionViewItem](https://developer.apple.com/documentation/appkit/nscollectionviewitem) conforming to `QuicklookPreviewable` provide a rendered image representation as default value.
      */
     var previewItemTransitionImage: NSImage? { get }
     /**
      The title to display for the preview item.
 
-     If you don’t implement this property, Quick Look examines the URL or content of the previewed item to determine an appropriate title. Return a non-nil value for this property to provide a custom title.
+     If you don’t implement this property, ``QuicklookPanel`` examines the URL or content of the previewed item to determine an appropriate title.
      */
     var previewItemTitle: String? { get }
 }

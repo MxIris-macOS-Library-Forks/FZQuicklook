@@ -31,14 +31,18 @@ extension NSView {
     }
 
     var renderedImage: NSImage {
-        let image = NSImage(size: bounds.size)
-        image.lockFocus()
-
-        if let context = Self.currentContext {
-            layer?.render(in: context)
+        let bounds = bounds
+        let hidden = isHidden
+        isHidden = false
+        defer { isHidden = hidden }
+        layoutSubtreeIfNeeded()
+        displayIfNeeded()
+        guard let rep = bitmapImageRepForCachingDisplay(in: bounds) else {
+            return NSImage(size: bounds.size)
         }
-
-        image.unlockFocus()
+        cacheDisplay(in: bounds, to: rep)
+        let image = NSImage(size: bounds.size)
+        image.addRepresentation(rep)
         return image
     }
 

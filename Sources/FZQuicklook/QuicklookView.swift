@@ -21,7 +21,9 @@ import Quartz
     /**
      The item to preview.
 
-     You can preview any item conforming to ``QuicklookPreviewable``. When you set this property, the `QuicklookView` loads the preview asynchronously. Due to this asynchronous behavior, don’t assume that the preview is ready immediately after assigning it to this property.
+     You can preview any item conforming to ``QuicklookPreviewable``. To display a preview of a file, use a file [URL](https://developer.apple.com/documentation/foundation/url).
+     
+     When you set this property, the `QuicklookView` loads the preview asynchronously. Due to this asynchronous behavior, don’t assume that the preview is ready immediately after assigning it to this property.
      */
     public var item: QuicklookPreviewable? {
         get {
@@ -67,6 +69,11 @@ import Quartz
         set { qlPreviewView.autostarts = newValue }
     }
 
+    /**
+     A Boolean value that determines whether the preview should close when its window closes.
+     
+     The default value of this property is `true`, which means that the preview automatically closes when its window closes. If you set this property to false, close the preview by calling the close() method when finished with it. Once you close a QLPreviewView, it won’t accept any more preview items.
+     */
     @objc open var shouldCloseWithWindow: Bool {
         get { qlPreviewView.shouldCloseWithWindow }
         set {

@@ -31,7 +31,7 @@ extension NSCollectionView {
             keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
                 guard let self = self, self.window?.firstResponder == self else { return event }
                 if self.isQuicklookPreviewable, event.keyCode == 49 {
-                    if QuicklookPanel.shared.isVisible == false {
+                    if !QuicklookPanel.shared.isVisible {
                         self.quicklookSelectedItems()
                         QuicklookPanel.shared.keyDownHandler = { [weak self] event in
                             guard let self = self else { return }
